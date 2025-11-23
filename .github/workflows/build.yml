@@ -110,16 +110,67 @@ jobs:
       #    curl -L -o /tmp/archive.tar.xz "$ARCHIVE_URL"
       #    tar -xJf /tmp/archive.tar.xz -C "$DEST_DIR" --strip-components=1
 
+      #- name: Configure and build with CMake
+      #  shell: bash
+      #  run: |
+      #    curDir="$PWD"
+      #    mkdir -p build
+      #    export CC="$PWD/clang/bin/clang"
+      #    export CXX="$PWD/clang/bin/clang++"
+      #    cmake -S . -B build -G "Ninja Multi-Config" \
+      #      -DCMAKE_CXX_STDLIB_MODULES_JSON="/home/linuxbrew/.linuxbrew/Cellar/gcc/15.2.0/lib/gcc/current/libstdc++.modules.json" \
+      #      -DCMAKE_CXX_FLAGS="--gcc-toolchain=/home/linuxbrew/.linuxbrew/Cellar/gcc/15.2.0" \
+      #      -DCMAKE_CXX_SCAN_FOR_MODULES=ON \
+      #      -DCMAKE_CXX_COMPILER="$curDir/clang/bin/clang++"
+      #    cmake --build build --target math
+
       - name: Configure and build with CMake
         shell: bash
         run: |
+          set -euo pipefail
           curDir="$PWD"
+
+          # HOME for brewed gcc: adjust if you install different version, or compute dynamically
+          GCC_BASE="/home/linuxbrew/.linuxbrew/Cellar/gcc/15.2.0"
+          GCC_MAJOR="15"
+
+          # canonical include/lib locations inside the brew gcc install
+          GCC_INCLUDE="$GCC_BASE/include/c++/$GCC_MAJOR"
+          # the include directory has a target-specific subdir like x86_64-pc-linux-gnu
+          GCC_INCLUDE_TARGET="$(ls -1 "$GCC_INCLUDE" | head -n1)"
+          GCC_INCLUDE_TARGET_FULL="$GCC_INCLUDE/$GCC_INCLUDE_TARGET"
+          GCC_LIB="$GCC_BASE/lib/gcc/$GCC_MAJOR"
+
+          echo "Using GCC_BASE=$GCC_BASE"
+          echo "GCC_INCLUDE=$GCC_INCLUDE"
+          echo "GCC_INCLUDE_TARGET_FULL=$GCC_INCLUDE_TARGET_FULL"
+          echo "GCC_LIB=$GCC_LIB"
+
+          # Export env vars so clang driver finds startup objects (crtbeginS.o etc.)
+          # and so runtime/linker can find brewed libstdc++.
+          export CPATH="$GCC_INCLUDE:$GCC_INCLUDE_TARGET_FULL:$CPATH"
+          export CPLUS_INCLUDE_PATH="$GCC_INCLUDE:$GCC_INCLUDE_TARGET_FULL:$CPLUS_INCLUDE_PATH"
+          export LIBRARY_PATH="$GCC_LIB:$LIBRARY_PATH"           # used by driver to find crt*.o
+          export LD_LIBRARY_PATH="$GCC_LIB:$LD_LIBRARY_PATH"     # runtime (runnable in CI)
+          export PKG_CONFIG_PATH="$GCC_BASE/lib/pkgconfig:$PKG_CONFIG_PATH" || true
+
+          # Optional: show what compiler will see (for debugging)
+          echo "CPATH=$CPATH"
+          echo "LIBRARY_PATH=$LIBRARY_PATH"
+          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+
+          # Configure CMake: pass --gcc-toolchain and explicit include/linker hints.
           mkdir -p build
-          export CC="$PWD/clang/bin/clang"
-          export CXX="$PWD/clang/bin/clang++"
+          export CC="$curDir/clang/bin/clang"
+          export CXX="$curDir/clang/bin/clang++"
+
           cmake -S . -B build -G "Ninja Multi-Config" \
-            -DCMAKE_CXX_STDLIB_MODULES_JSON="/home/linuxbrew/.linuxbrew/Cellar/gcc/15.2.0/lib/gcc/current/libstdc++.modules.json" \
-            -DCMAKE_CXX_FLAGS="--gcc-toolchain=/home/linuxbrew/.linuxbrew/Cellar/gcc/15.2.0" \
-            -DCMAKE_CXX_SCAN_FOR_MODULES=ON \
-            -DCMAKE_CXX_COMPILER="$curDir/clang/bin/clang++"
-          cmake --build build --target math
+            -DCMAKE_C_COMPILER="$CC" \
+            -DCMAKE_CXX_COMPILER="$CXX" \
+            -DCMAKE_CXX_STDLIB_MODULES_JSON="$GCC_BASE/lib/gcc/current/libstdc++.modules.json" \
+            -DCMAKE_CXX_FLAGS="--gcc-toolchain=$GCC_BASE -isystem $GCC_INCLUDE -isystem $GCC_INCLUDE_TARGET_FULL -B$GCC_LIB" \
+            -DCMAKE_EXE_LINKER_FLAGS="-L$GCC_LIB -Wl,-rpath,$GCC_LIB" \
+            -DCMAKE_SHARED_LINKER_FLAGS="-L$GCC_LIB -Wl,-rpath,$GCC_LIB" \
+            -DCMAKE_CXX_SCAN_FOR_MODULES=ON
+
+          cmake --build build --config Debug --target math
