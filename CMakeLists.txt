@@ -17,5 +17,5 @@ target_sources(math
 )
 target_compile_features(math PUBLIC cxx_std_23)
 
-add_executable(app main.cpp)
+add_executable(app src/main.cpp)
 target_link_libraries(app PRIVATE math)
