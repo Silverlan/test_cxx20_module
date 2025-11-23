@@ -9,6 +9,9 @@ message(STATUS "CMake version: ${CMAKE_VERSION}")
 
 project(modules_test LANGUAGES CXX)
 
+add_compile_options(-stdlib=libstdc++)
+add_link_options(-stdlib=libstdc++)
+
 add_library(math STATIC)
 target_sources(math
   PUBLIC
