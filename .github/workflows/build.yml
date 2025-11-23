@@ -47,10 +47,31 @@ jobs:
           packages: gcc
           cache: true
 
-      - name: Check GCC
-        shell: bash
+      # If you prefer to install directly (without the wrapper action), use:
+      # - name: Install GCC (direct)
+      #   run: brew install gcc
+
+      # 2) If you used gerlero/brew-install above, 'gcc' should be present. Otherwise:
+      - name: Ensure GCC is installed (fallback)
+        if: ${{ always() }}
         run: |
-          gcc --version
+          if ! command -v gcc-15 >/dev/null 2>&1; then
+            brew update || true
+            brew install gcc
+          fi
+
+      # 3) Set CC/CXX so subsequent steps use brewed gcc-15/g++-15
+      - name: Export CC/CXX for job
+        run: |
+          echo "CC=$(which gcc-15)" >> $GITHUB_ENV
+          echo "CXX=$(which g++-15)" >> $GITHUB_ENV
+          # optional: expose full path to the brewed bin dir (useful for some tools)
+          echo "HOMEBREW_BIN=$(brew --prefix)/bin" >> $GITHUB_ENV
+
+      - name: Check GCC version
+        run: |
+          gcc-15 --version
+          g++-15 --version
 
 
 
