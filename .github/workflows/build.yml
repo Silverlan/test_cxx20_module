@@ -1,0 +1,33 @@
+name: CMake build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout this repository
+        uses: actions/checkout@v4
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+
+      - name: Install Dependencies
+        shell: bash
+        run: |
+          apt install clang
+          apt install ninja-build
+
+      - name: Configure and build with CMake
+        shell: bash
+        run: |
+          curDir="$PWD"
+          mkdir -p build
+          export CC="$curDir/bin/clang"
+          export CXX="$curDir/bin/clang++"
+          cmake -S . -B build -G "Ninja Multi-Config" -DCMAKE_CXX_SCAN_FOR_MODULES=ON
+          cmake --build build --target math
