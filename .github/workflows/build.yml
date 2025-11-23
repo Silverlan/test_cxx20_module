@@ -112,36 +112,43 @@ jobs:
 
 
 
-      - name: Expose Homebrew GCC libs to linker
+      - name: Expose Homebrew GCC libs to linker (robust)
         shell: bash
         run: |
           set -euo pipefail
-          # Get brew gcc prefix (opt symlink is more stable)
-          GCC_PREFIX="$(brew --prefix gcc)"
+
+          # get brew gcc prefix (opt symlink is stable)
+          GCC_PREFIX="$(brew --prefix gcc 2>/dev/null || true)"
           echo "GCC_PREFIX=$GCC_PREFIX" >> $GITHUB_ENV
 
-          # Find the GCC frontend lib dir where crtbeginS.o lives
-          # e.g. /home/linuxbrew/.linuxbrew/opt/gcc/lib/gcc/15
-          GCC_LIBGCC_DIR="$(find "$GCC_PREFIX" -type d -name 'gcc' -maxdepth 2 -mindepth 1 | sort -V | tail -n1)"
-          if [ -z "$GCC_LIBGCC_DIR" ]; then
-            # fallback to Cellar layout
-            GCC_LIBGCC_DIR="$(find "$(brew --prefix)/Cellar/gcc" -type d -name 'gcc' | sort -V | tail -n1)"
+          # try to find the lib/gcc directory where crtbeginS.o lives
+          GCC_LIBGCC_DIR=""
+          if [ -n "$GCC_PREFIX" ] && [ -d "$GCC_PREFIX" ]; then
+            GCC_LIBGCC_DIR="$(find "$GCC_PREFIX" -type d -path "*/lib/gcc/*" 2>/dev/null | sort -V | tail -n1 || true)"
           fi
 
-          # export library/search paths for the linker & runtime loader
-          echo "LIBRARY_PATH=$GCC_LIBGCC_DIR:$GCC_PREFIX/lib:$LIBRARY_PATH" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=$GCC_PREFIX/lib:$GCC_LIBGCC_DIR:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-
-          # export C++ include path (helps compile-time)
-          CXX_INCDIR="$(ls -d $GCC_PREFIX/include/c++/* 2>/dev/null | sort -V | tail -n1 || true)"
-          if [ -n "$CXX_INCDIR" ]; then
-            echo "CPLUS_INCLUDE_PATH=$CXX_INCDIR:$CPLUS_INCLUDE_PATH" >> $GITHUB_ENV
+          # fallback to Cellar layout if needed
+          if [ -z "${GCC_LIBGCC_DIR:-}" ]; then
+            CELLAR_PREFIX="$(brew --prefix 2>/dev/null)/Cellar/gcc"
+            if [ -d "$CELLAR_PREFIX" ]; then
+              GCC_LIBGCC_DIR="$(find "$CELLAR_PREFIX" -type d -path "*/lib/gcc/*" 2>/dev/null | sort -V | tail -n1 || true)"
+            fi
           fi
 
-          # optional: show what we found (useful for CI logs)
+          # Write safe env values to GITHUB_ENV — use ${VAR:-} to avoid unbound-var errors
+          echo "LIBRARY_PATH=${GCC_LIBGCC_DIR:-}:${GCC_PREFIX:-}/lib:${LIBRARY_PATH:-}" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=${GCC_PREFIX:-}/lib:${GCC_LIBGCC_DIR:-}:${LD_LIBRARY_PATH:-}" >> $GITHUB_ENV
+
+          # C++ include path (if present)
+          CXX_INCDIR="$(ls -d ${GCC_PREFIX:-}/include/c++/* 2>/dev/null | sort -V | tail -n1 || true)"
+          if [ -n "${CXX_INCDIR:-}" ]; then
+            echo "CPLUS_INCLUDE_PATH=${CXX_INCDIR}:${CPLUS_INCLUDE_PATH:-}" >> $GITHUB_ENV
+          fi
+
+          # Useful debug info for CI logs (non-fatal)
           echo "GCC_PREFIX=$GCC_PREFIX"
-          echo "GCC_LIBGCC_DIR=$GCC_LIBGCC_DIR"
-          ls -la "$GCC_LIBGCC_DIR" | sed -n '1,20p'
+          echo "GCC_LIBGCC_DIR=${GCC_LIBGCC_DIR:-}"
+          ls -la "${GCC_LIBGCC_DIR:-}" 2>/dev/null | sed -n '1,20p' || true
 
 
 
