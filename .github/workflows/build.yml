@@ -19,8 +19,8 @@ jobs:
       - name: Install Dependencies
         shell: bash
         run: |
-          apt install clang
-          apt install ninja-build
+          sudo apt install clang
+          sudo apt install ninja-build
 
       - name: Configure and build with CMake
         shell: bash
