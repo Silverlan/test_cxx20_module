@@ -22,47 +22,35 @@ jobs:
 
 
 
-      - name: Install prerequisites
+      # 1) Install Homebrew (Linux) non-interactively
+      - name: Install Homebrew (Linux)
         run: |
-          set -eux
-          export DEBIAN_FRONTEND=noninteractive
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends software-properties-common ca-certificates gnupg lsb-release curl
+          set -euo pipefail
+          # Install Homebrew (official script)
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          # Add Homebrew to PATH for the rest of this job
+          echo "/home/linuxbrew/.linuxbrew/bin" >> $GITHUB_PATH
+          echo "/home/linuxbrew/.linuxbrew/sbin" >> $GITHUB_PATH
+          # Recommended: disable brew auto-update inside CI run for speed (optional)
+          echo "HOMEBREW_NO_AUTO_UPDATE=1" >> $GITHUB_ENV
 
-      - name: Add ubuntu-toolchain-r/test PPA and update apt
+      - name: Verify brew
         run: |
-          set -eux
-          sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-          sudo apt-get update
+          brew --version
+          brew config
 
-      - name: Show candidate packages (debug)
-        run: |
-          set -eux
-          echo "lsb_release -a:"
-          lsb_release -a || true
-          apt-cache policy gcc-16 || true
-          apt-cache madison gcc-16 || true
+      # Optional: use a Homebrew-specific installer + cache action (speeds repeated runs)
+      # (Alternative: omit and run 'brew install gcc' directly.)
+      - name: Install & cache Homebrew packages (optional)
+        uses: gerlero/brew-install@v1
+        with:
+          packages: gcc
+          cache: true
 
-      - name: Install GCC 16 (gcc-16, g++-16)
-        run: |
-          set -eux
-          export DEBIAN_FRONTEND=noninteractive
-          sudo apt-get install -y --no-install-recommends gcc-16 g++-16 gfortran-16 || (apt-cache policy gcc-16 && exit 1)
-
-      - name: Register with update-alternatives (optional)
-        run: |
-          set -eux
-          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-16 60 \
-            --slave /usr/bin/g++ g++ /usr/bin/g++-16
-          sudo update-alternatives --set gcc /usr/bin/gcc-16
-          sudo update-alternatives --set g++ /usr/bin/g++-16
-
-      - name: Verify active GCC
+      - name: Check GCC
+        shell: bash
         run: |
           gcc --version
-          g++ --version
-
-
 
 
 
