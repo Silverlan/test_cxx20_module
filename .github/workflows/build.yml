@@ -16,6 +16,17 @@ jobs:
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
 
+      - name: Add ubuntu-toolchain-r/test PPA and update apt
+        run: |
+          sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+          sudo apt-get update
+
+      - name: Install GCC 16, G++ 16 and friends
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt-get install -y --no-install-recommends \
+            gcc-16 g++-16
+
       - name: Install Dependencies
         shell: bash
         run: |
