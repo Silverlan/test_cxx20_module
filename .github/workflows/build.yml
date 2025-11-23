@@ -73,7 +73,9 @@ jobs:
           gcc-15 --version
           g++-15 --version
 
-
+      - name: Find libstdc++.modules.json
+        run: |
+          sudo find / -type f -name 'libstdc++.modules.json' 2>/dev/null
 
 
 
