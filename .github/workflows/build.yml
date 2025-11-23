@@ -27,7 +27,7 @@ jobs:
         run: |
           curDir="$PWD"
           mkdir -p build
-          export CC="$curDir/bin/clang"
-          export CXX="$curDir/bin/clang++"
+          export CC="clang"
+          export CXX="clang++"
           cmake -S . -B build -G "Ninja Multi-Config" -DCMAKE_CXX_SCAN_FOR_MODULES=ON
           cmake --build build --target math
