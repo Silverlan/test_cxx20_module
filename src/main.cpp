@@ -1,5 +1,5 @@
 import math;
-#include <iostream>
+import std.import;
 
 int main() {
     std::cout << "2 + 3 = " << add(2, 3) << "\n";

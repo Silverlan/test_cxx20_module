@@ -52,5 +52,5 @@ jobs:
           export CXX="$PWD/clang/bin/clang++"
           cmake -S . -B build -G "Ninja Multi-Config" \
             -DCMAKE_CXX_SCAN_FOR_MODULES=ON -DCMAKE_CXX_STDLIB_MODULES_JSON="$curDir/gcc-15/lib64/libstdc++.modules.json" \
-            -DCMAKE_C_COMPILER="$curDir/clang/bin/clang" -DCMAKE_CXX_COMPILER="$curDir/clang/bin/clang++"
+            -DCMAKE_CXX_COMPILER="$curDir/clang/bin/clang++"
           cmake --build build --target math
