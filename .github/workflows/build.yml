@@ -115,14 +115,22 @@ jobs:
         run: |
           curDir="$PWD"
           mkdir -p build
-          #export CC="$PWD/clang/bin/clang"
-          #export CXX="$PWD/clang/bin/clang++"
+
           export CC="gcc-15"
           export CXX="g++-15"
           cmake -S . -B build -G "Ninja Multi-Config" \
             -DCMAKE_CXX_STDLIB_MODULES_JSON="/home/linuxbrew/.linuxbrew/Cellar/gcc/15.2.0/lib/gcc/current/libstdc++.modules.json" \
-            -DCMAKE_CXX_FLAGS="--gcc-toolchain=/home/linuxbrew/.linuxbrew/Cellar/gcc/15.2.0" \
             -DCMAKE_CXX_SCAN_FOR_MODULES=ON \
             -DCMAKE_CXX_COMPILER="g++-15"
             #-DCMAKE_CXX_COMPILER="$curDir/clang/bin/clang++"
+
+          #export CC="$PWD/clang/bin/clang"
+          #export CXX="$PWD/clang/bin/clang++"
+          #cmake -S . -B build -G "Ninja Multi-Config" \
+          #  -DCMAKE_CXX_STDLIB_MODULES_JSON="/home/linuxbrew/.linuxbrew/Cellar/gcc/15.2.0/lib/gcc/current/libstdc++.modules.json" \
+          #  -DCMAKE_CXX_FLAGS="--gcc-toolchain=/home/linuxbrew/.linuxbrew/Cellar/gcc/15.2.0" \
+          #  -DCMAKE_CXX_SCAN_FOR_MODULES=ON \
+          #  -DCMAKE_CXX_COMPILER="$curDir/clang/bin/clang++"
+
+
           cmake --build build --target math
