@@ -6,10 +6,6 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED OFF)
 set(CMAKE_CXX_MODULE_STD 1)
 
-
-#add_compile_options(-stdlib=libstdc++)
-#add_link_options(-stdlib=libstdc++)
-
 message(STATUS "CMake version: ${CMAKE_VERSION}")
 
 project(modules_test LANGUAGES CXX)
@@ -21,9 +17,6 @@ target_sources(math
     src/math.cppm
 )
 target_compile_features(math PUBLIC cxx_std_23)
-
-target_compile_options(math PRIVATE -stdlib=libstdc++)
-target_link_options(math PRIVATE -stdlib=libstdc++)
 
 add_executable(app src/main.cpp)
 target_link_libraries(app PRIVATE math)
