@@ -100,6 +100,11 @@ jobs:
       #    curl -L -o /tmp/archive.tar.xz "$ARCHIVE_URL"
       #    tar -xJf /tmp/archive.tar.xz -C "$DEST_DIR" --strip-components=1
 
+      - name: Find libs
+        run: |
+          sudo find / -type f -name 'libc++.modules.json*' 2>/dev/null
+          sudo find / -type f -name 'libc++.so*' 2>/dev/null
+
       - name: Configure and build with CMake
         shell: bash
         run: |
@@ -122,6 +127,7 @@ jobs:
           export C_INCLUDE_PATH="${GCC_ROOT}/include:${C_INCLUDE_PATH}"
           export CPLUS_INCLUDE_PATH="${GCC_ROOT}/include/c++/15:${CPLUS_INCLUDE_PATH}"
 
+          # libstdc
           # Pass -B to point at the directory with crtbeginS.o, pass -L and rpath for libc++
           CXX_FLAGS="--gcc-toolchain=${GCC_ROOT} -B${GCC_CRT_DIR} -stdlib=libc++"
           EXE_LINKER_FLAGS="-L${GCC_LIB_DIR} -Wl,-rpath,${GCC_LIB_DIR} -B${GCC_CRT_DIR} -stdlib=libc++"
