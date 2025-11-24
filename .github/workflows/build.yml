@@ -74,7 +74,7 @@ jobs:
         shell: bash
         run: |
           #sudo apt install clang
-          sudo apt install ninja-build
+          apt install ninja-build
 
       - name: Download Clang-22
         shell: bash
