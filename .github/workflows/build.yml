@@ -123,7 +123,8 @@ jobs:
           export CPLUS_INCLUDE_PATH="${GCC_ROOT}/include/c++/15:${CPLUS_INCLUDE_PATH}"
 
           # Pass -B to point at the directory with crtbeginS.o, pass -L and rpath for libstdc++
-          CXX_FLAGS="--gcc-toolchain=${GCC_ROOT} -B${GCC_CRT_DIR} -stdlib=libstdc++"
+          #CXX_FLAGS="--gcc-toolchain=${GCC_ROOT} -B${GCC_CRT_DIR} -stdlib=libstdc++"
+          CXX_FLAGS="-B${GCC_CRT_DIR} -stdlib=libstdc++"
           EXE_LINKER_FLAGS="-L${GCC_LIB_DIR} -Wl,-rpath,${GCC_LIB_DIR} -B${GCC_CRT_DIR}"
           SHARED_LINKER_FLAGS="${EXE_LINKER_FLAGS}"
 
