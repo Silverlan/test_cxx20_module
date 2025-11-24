@@ -5,12 +5,12 @@ set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "d0edc3af-4c50-42ea-a356-e2862fe7a444")
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_MODULE_STD 1)
 
+add_compile_options(-stdlib=libstdc++)
+add_link_options(-stdlib=libstdc++)
+
 message(STATUS "CMake version: ${CMAKE_VERSION}")
 
 project(modules_test LANGUAGES CXX)
-
-add_compile_options(-stdlib=libstdc++)
-add_link_options(-stdlib=libstdc++)
 
 add_library(math STATIC)
 target_sources(math
