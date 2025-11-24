@@ -73,16 +73,6 @@ jobs:
           gcc-15 --version
           g++-15 --version
 
-
-
-      - name: Find libs
-        run: |
-          sudo find / -type f -name 'crtbeginS.o' 2>/dev/null
-          sudo find / -type f -name 'libstdc++.so*' 2>/dev/null
-
-
-
-
       - name: Install Dependencies
         shell: bash
         run: |
@@ -116,46 +106,35 @@ jobs:
           curDir="$PWD"
           mkdir -p build
 
-          # GCC (Works)
-          #export CC="gcc-15"
-          #export CXX="g++-15"
-          #cmake -S . -B build -G "Ninja Multi-Config" \
-          #  -DCMAKE_CXX_STDLIB_MODULES_JSON="/home/linuxbrew/.linuxbrew/Cellar/gcc/15.2.0/lib/gcc/current/libstdc++.modules.json" \
-          #  -DCMAKE_CXX_SCAN_FOR_MODULES=ON \
-          #  -DCMAKE_CXX_COMPILER="g++-15"
-          #  #-DCMAKE_CXX_COMPILER="$curDir/clang/bin/clang++"
-
-
-
-
-          curDir="$PWD"
           GCC_ROOT="/home/linuxbrew/.linuxbrew/Cellar/gcc/15.2.0"
+          # directory that actually contains crtbeginS.o in your logs:
+          GCC_CRT_DIR="${GCC_ROOT}/lib/gcc/current/gcc/x86_64-pc-linux-gnu/15"
+          # directory that contains libstdc++.so
+          GCC_LIB_DIR="${GCC_ROOT}/lib/gcc/current"
 
-          # clang from your repo (unchanged)
+          # clang from your repo
           export CC="$curDir/clang/bin/clang"
           export CXX="$curDir/clang/bin/clang++"
 
-          # Help the clang driver and the linker find Homebrew GCC's runtime objects & libstdc++
-          export LIBRARY_PATH="$GCC_ROOT/lib/gcc/current:$GCC_ROOT/lib/gcc/current/gcc/x86_64-pc-linux-gnu/15:$LIBRARY_PATH"
-          export LD_LIBRARY_PATH="$GCC_ROOT/lib/gcc/current:$LD_LIBRARY_PATH"
+          # help the driver/linker find the right files
+          export LIBRARY_PATH="${GCC_LIB_DIR}:${GCC_CRT_DIR}:${LIBRARY_PATH}"
+          export LD_LIBRARY_PATH="${GCC_LIB_DIR}:${LD_LIBRARY_PATH}"
+          export C_INCLUDE_PATH="${GCC_ROOT}/include:${C_INCLUDE_PATH}"
+          export CPLUS_INCLUDE_PATH="${GCC_ROOT}/include/c++/15:${CPLUS_INCLUDE_PATH}"
 
-          # C/C++ include paths (so #include <bits/...> or <cxx/...> find them if needed)
-          export C_INCLUDE_PATH="$GCC_ROOT/include:$C_INCLUDE_PATH"
-          export CPLUS_INCLUDE_PATH="$GCC_ROOT/include/c++/15:$CPLUS_INCLUDE_PATH"
+          # Pass -B to point at the directory with crtbeginS.o, pass -L and rpath for libstdc++
+          CXX_FLAGS="--gcc-toolchain=${GCC_ROOT} -B${GCC_CRT_DIR}"
+          EXE_LINKER_FLAGS="-L${GCC_LIB_DIR} -Wl,-rpath,${GCC_LIB_DIR} -B${GCC_CRT_DIR}"
+          SHARED_LINKER_FLAGS="${EXE_LINKER_FLAGS}"
 
-
-
-
-
-
-
-          export CC="$PWD/clang/bin/clang"
-          export CXX="$PWD/clang/bin/clang++"
           cmake -S . -B build -G "Ninja Multi-Config" \
-            -DCMAKE_CXX_STDLIB_MODULES_JSON="/home/linuxbrew/.linuxbrew/Cellar/gcc/15.2.0/lib/gcc/current/libstdc++.modules.json" \
-            -DCMAKE_CXX_FLAGS="--gcc-toolchain=/home/linuxbrew/.linuxbrew/Cellar/gcc/15.2.0" \
+            -DCMAKE_CXX_STDLIB_MODULES_JSON="${GCC_ROOT}/lib/gcc/current/libstdc++.modules.json" \
             -DCMAKE_CXX_SCAN_FOR_MODULES=ON \
-            -DCMAKE_CXX_COMPILER="$curDir/clang/bin/clang++"
+            -DCMAKE_CXX_COMPILER="${CXX}" \
+            -DCMAKE_CXX_FLAGS="${CXX_FLAGS}" \
+            -DCMAKE_EXE_LINKER_FLAGS="${EXE_LINKER_FLAGS}" \
+            -DCMAKE_SHARED_LINKER_FLAGS="${SHARED_LINKER_FLAGS}"
+
+          cmake --build build --config Debug --target math
 
 
-          cmake --build build --target math
