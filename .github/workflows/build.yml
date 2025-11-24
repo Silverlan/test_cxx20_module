@@ -97,11 +97,6 @@ jobs:
       #    curl -L -o /tmp/archive.tar.xz "$ARCHIVE_URL"
       #    tar -xJf /tmp/archive.tar.xz -C "$DEST_DIR" --strip-components=1
 
-      - name: Find Json
-        shell: bash
-        run: |
-          find / -name libstdc++.modules.json 2>/dev/null
-
       - name: Configure and build with CMake
         shell: bash
         run: |
@@ -139,7 +134,8 @@ jobs:
           export CXX="$PWD/clang/bin/clang++"
           cmake -S . -B build -G "Ninja Multi-Config" \
             -DCMAKE_CXX_SCAN_FOR_MODULES=ON \
-            -DCMAKE_CXX_COMPILER="$curDir/clang/bin/clang++"
+            -DCMAKE_CXX_COMPILER="$curDir/clang/bin/clang++" \
+            -DCMAKE_CXX_STDLIB_MODULES_JSON="/opt/gcc-16/lib64/libstdc++.modules.json"
 
           cmake --build build --target math
 
