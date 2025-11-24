@@ -77,6 +77,42 @@ jobs:
 
 
 
+      - name: Make Homebrew GCC the system default (non-interactive)
+        run: |
+          set -euo pipefail
+
+          HB="/home/linuxbrew/.linuxbrew/bin"
+          # list of expected Homebrew compiler executables (adjust versions if needed)
+          EXES=(gcc-15 g++-15 cpp-15 gcov-15 gfortran-15)
+
+          # sanity check
+          for e in "${EXES[@]}"; do
+            if [ ! -x "${HB}/${e}" ]; then
+              echo "Error: ${HB}/${e} not found or not executable. Adjust path/version and retry."
+              exit 1
+            fi
+          done
+
+          # Register the alternative and its slaves (idempotent — will add if absent)
+          sudo update-alternatives --install /usr/bin/gcc gcc "${HB}/gcc-15" 200 \
+            --slave /usr/bin/g++ g++ "${HB}/g++-15" \
+            --slave /usr/bin/cpp cpp "${HB}/cpp-15" \
+            --slave /usr/bin/gcov gcov "${HB}/gcov-15" \
+            --slave /usr/bin/gfortran gfortran "${HB}/gfortran-15" \
+            --slave /usr/bin/c++ c++ "${HB}/g++-15"
+
+          # Make it the active choice for the 'gcc' group (non-interactive)
+          sudo update-alternatives --set gcc "${HB}/gcc-15"
+
+          # Verify
+          echo "Active compilers:"
+          which gcc g++
+          gcc --version
+          g++ --version
+
+
+
+
 
 
 
@@ -109,54 +145,6 @@ jobs:
       #    mkdir -p "$DEST_DIR"
       #    curl -L -o /tmp/archive.tar.xz "$ARCHIVE_URL"
       #    tar -xJf /tmp/archive.tar.xz -C "$DEST_DIR" --strip-components=1
-
-
-
-      - name: Expose Homebrew GCC libs to linker (robust)
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          # get brew gcc prefix (opt symlink is stable)
-          GCC_PREFIX="$(brew --prefix gcc 2>/dev/null || true)"
-          echo "GCC_PREFIX=$GCC_PREFIX" >> $GITHUB_ENV
-
-          # try to find the lib/gcc directory where crtbeginS.o lives
-          GCC_LIBGCC_DIR=""
-          if [ -n "$GCC_PREFIX" ] && [ -d "$GCC_PREFIX" ]; then
-            GCC_LIBGCC_DIR="$(find "$GCC_PREFIX" -type d -path "*/lib/gcc/*" 2>/dev/null | sort -V | tail -n1 || true)"
-          fi
-
-          # fallback to Cellar layout if needed
-          if [ -z "${GCC_LIBGCC_DIR:-}" ]; then
-            CELLAR_PREFIX="$(brew --prefix 2>/dev/null)/Cellar/gcc"
-            if [ -d "$CELLAR_PREFIX" ]; then
-              GCC_LIBGCC_DIR="$(find "$CELLAR_PREFIX" -type d -path "*/lib/gcc/*" 2>/dev/null | sort -V | tail -n1 || true)"
-            fi
-          fi
-
-          # Write safe env values to GITHUB_ENV — use ${VAR:-} to avoid unbound-var errors
-          echo "LIBRARY_PATH=${GCC_LIBGCC_DIR:-}:${GCC_PREFIX:-}/lib:${LIBRARY_PATH:-}" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=${GCC_PREFIX:-}/lib:${GCC_LIBGCC_DIR:-}:${LD_LIBRARY_PATH:-}" >> $GITHUB_ENV
-
-          # C++ include path (if present)
-          CXX_INCDIR="$(ls -d ${GCC_PREFIX:-}/include/c++/* 2>/dev/null | sort -V | tail -n1 || true)"
-          if [ -n "${CXX_INCDIR:-}" ]; then
-            echo "CPLUS_INCLUDE_PATH=${CXX_INCDIR}:${CPLUS_INCLUDE_PATH:-}" >> $GITHUB_ENV
-          fi
-
-          # Useful debug info for CI logs (non-fatal)
-          echo "GCC_PREFIX=$GCC_PREFIX"
-          echo "GCC_LIBGCC_DIR=${GCC_LIBGCC_DIR:-}"
-          ls -la "${GCC_LIBGCC_DIR:-}" 2>/dev/null | sed -n '1,20p' || true
-
-
-
-
-
-
-
-
 
       - name: Configure and build with CMake
         shell: bash
