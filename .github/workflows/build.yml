@@ -125,6 +125,30 @@ jobs:
           #  -DCMAKE_CXX_COMPILER="g++-15"
           #  #-DCMAKE_CXX_COMPILER="$curDir/clang/bin/clang++"
 
+
+
+
+          curDir="$PWD"
+          GCC_ROOT="/home/linuxbrew/.linuxbrew/Cellar/gcc/15.2.0"
+
+          # clang from your repo (unchanged)
+          export CC="$curDir/clang/bin/clang"
+          export CXX="$curDir/clang/bin/clang++"
+
+          # Help the clang driver and the linker find Homebrew GCC's runtime objects & libstdc++
+          export LIBRARY_PATH="$GCC_ROOT/lib/gcc/current:$GCC_ROOT/lib/gcc/current/gcc/x86_64-pc-linux-gnu/15:$LIBRARY_PATH"
+          export LD_LIBRARY_PATH="$GCC_ROOT/lib/gcc/current:$LD_LIBRARY_PATH"
+
+          # C/C++ include paths (so #include <bits/...> or <cxx/...> find them if needed)
+          export C_INCLUDE_PATH="$GCC_ROOT/include:$C_INCLUDE_PATH"
+          export CPLUS_INCLUDE_PATH="$GCC_ROOT/include/c++/15:$CPLUS_INCLUDE_PATH"
+
+
+
+
+
+
+
           export CC="$PWD/clang/bin/clang"
           export CXX="$PWD/clang/bin/clang++"
           cmake -S . -B build -G "Ninja Multi-Config" \
