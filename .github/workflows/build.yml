@@ -124,11 +124,11 @@ jobs:
 
           # Pass -B to point at the directory with crtbeginS.o, pass -L and rpath for libstdc++
           CXX_FLAGS="--gcc-toolchain=${GCC_ROOT} -B${GCC_CRT_DIR} -stdlib=libstdc++"
-          EXE_LINKER_FLAGS="-L${GCC_LIB_DIR} -Wl,-rpath,${GCC_LIB_DIR} -B${GCC_CRT_DIR} -stdlib=libstdc++"
-          SHARED_LINKER_FLAGS="${EXE_LINKER_FLAGS} -stdlib=libstdc++"
+          EXE_LINKER_FLAGS="-L${GCC_LIB_DIR} -Wl,-rpath,${GCC_LIB_DIR} -B${GCC_CRT_DIR} -stdlib=libc++"
+          SHARED_LINKER_FLAGS="${EXE_LINKER_FLAGS} -stdlib=libc++"
 
           cmake -S . -B build -G "Ninja Multi-Config" \
-            -DCMAKE_CXX_STDLIB_MODULES_JSON="${GCC_ROOT}/lib/gcc/current/libstdc++.modules.json" \
+            -DCMAKE_CXX_STDLIB_MODULES_JSON="${GCC_ROOT}/lib/gcc/current/libc++.modules.json" \
             -DCMAKE_CXX_SCAN_FOR_MODULES=ON \
             -DCMAKE_CXX_COMPILER="${CXX}" \
             -DCMAKE_CXX_FLAGS="${CXX_FLAGS}" \
