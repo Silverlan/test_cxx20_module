@@ -75,9 +75,10 @@ jobs:
 
 
 
-
-
-
+      - name: Find libs
+        run: |
+          sudo find / -type f -name 'crtbeginS.o' 2>/dev/null
+          sudo find / -type f -name 'libstdc++.so*' 2>/dev/null
 
 
 
@@ -87,64 +88,6 @@ jobs:
         run: |
           sudo apt install clang
           sudo apt install ninja-build
-
-
-
-
-
-
-
-      - name: Register Homebrew GCC alternatives (non-interactive, idempotent)
-        run: |
-          set -euo pipefail
-          HB="/home/linuxbrew/.linuxbrew/bin"
-
-          EXES=(gcc-15 g++-15 cpp-15 gcov-15 gfortran-15)
-
-          # sanity check
-          for e in "${EXES[@]}"; do
-            if [ ! -x "${HB}/${e}" ]; then
-              echo "Error: ${HB}/${e} not found or not executable. Adjust path/version and retry."
-              exit 1
-            fi
-          done
-
-          # Register each alternative separately (avoids master/slave conflicts).
-          sudo update-alternatives --install /usr/bin/gcc  gcc  "${HB}/gcc-15"      200
-          sudo update-alternatives --install /usr/bin/g++  g++  "${HB}/g++-15"      200
-          sudo update-alternatives --install /usr/bin/cpp  cpp  "${HB}/cpp-15"      200 || true
-          sudo update-alternatives --install /usr/bin/gcov gcov "${HB}/gcov-15"    200 || true
-          sudo update-alternatives --install /usr/bin/gfortran gfortran "${HB}/gfortran-15" 200 || true
-
-          # Non-interactively select our installed versions
-          sudo update-alternatives --set gcc  "${HB}/gcc-15"
-          sudo update-alternatives --set g++  "${HB}/g++-15"
-          # set cpp/gcov/gfortran if their groups exist / were created
-          if update-alternatives --query cpp >/dev/null 2>&1; then
-            sudo update-alternatives --set cpp "${HB}/cpp-15"
-          fi
-          if update-alternatives --query gcov >/dev/null 2>&1; then
-            sudo update-alternatives --set gcov "${HB}/gcov-15"
-          fi
-          if update-alternatives --query gfortran >/dev/null 2>&1; then
-            sudo update-alternatives --set gfortran "${HB}/gfortran-15"
-          fi
-
-          echo "Active compilers:"
-          which gcc g++ cpp || true
-          gcc --version
-          g++ --version
-
-
-
-
-
-
-
-
-
-
-
 
       - name: Download Clang-22
         shell: bash
