@@ -77,12 +77,11 @@ jobs:
 
 
 
-      - name: Make Homebrew GCC the system default (non-interactive)
+      - name: Register Homebrew GCC alternatives (non-interactive, idempotent)
         run: |
           set -euo pipefail
-
           HB="/home/linuxbrew/.linuxbrew/bin"
-          # list of expected Homebrew compiler executables (adjust versions if needed)
+
           EXES=(gcc-15 g++-15 cpp-15 gcov-15 gfortran-15)
 
           # sanity check
@@ -93,20 +92,29 @@ jobs:
             fi
           done
 
-          # Register the alternative and its slaves (idempotent — will add if absent)
-          sudo update-alternatives --install /usr/bin/gcc gcc "${HB}/gcc-15" 200 \
-            --slave /usr/bin/g++ g++ "${HB}/g++-15" \
-            --slave /usr/bin/cpp cpp "${HB}/cpp-15" \
-            --slave /usr/bin/gcov gcov "${HB}/gcov-15" \
-            --slave /usr/bin/gfortran gfortran "${HB}/gfortran-15" \
-            --slave /usr/bin/c++ c++ "${HB}/g++-15"
+          # Register each alternative separately (avoids master/slave conflicts).
+          sudo update-alternatives --install /usr/bin/gcc  gcc  "${HB}/gcc-15"      200
+          sudo update-alternatives --install /usr/bin/g++  g++  "${HB}/g++-15"      200
+          sudo update-alternatives --install /usr/bin/cpp  cpp  "${HB}/cpp-15"      200 || true
+          sudo update-alternatives --install /usr/bin/gcov gcov "${HB}/gcov-15"    200 || true
+          sudo update-alternatives --install /usr/bin/gfortran gfortran "${HB}/gfortran-15" 200 || true
 
-          # Make it the active choice for the 'gcc' group (non-interactive)
-          sudo update-alternatives --set gcc "${HB}/gcc-15"
+          # Non-interactively select our installed versions
+          sudo update-alternatives --set gcc  "${HB}/gcc-15"
+          sudo update-alternatives --set g++  "${HB}/g++-15"
+          # set cpp/gcov/gfortran if their groups exist / were created
+          if update-alternatives --query cpp >/dev/null 2>&1; then
+            sudo update-alternatives --set cpp "${HB}/cpp-15"
+          fi
+          if update-alternatives --query gcov >/dev/null 2>&1; then
+            sudo update-alternatives --set gcov "${HB}/gcov-15"
+          fi
+          if update-alternatives --query gfortran >/dev/null 2>&1; then
+            sudo update-alternatives --set gfortran "${HB}/gfortran-15"
+          fi
 
-          # Verify
           echo "Active compilers:"
-          which gcc g++
+          which gcc g++ cpp || true
           gcc --version
           g++ --version
 
